@@ -2,7 +2,7 @@ package utility
 
 import "testing"
 
-func TestWriteCustomOutput(t *testing.T) {
+func TestOutputWriter_WriteCustomOutput(t *testing.T) {
 	ow := NewOutputWriter()
 	ow.StartLine()
 	ow.AppendData("A", "a")
@@ -10,8 +10,8 @@ func TestWriteCustomOutput(t *testing.T) {
 	ow.WriteCustomOutput("B")
 }
 
-// TestExampleFWriteCustomOutput shows how to use the WriteCustomOutput function
-func TestExampleFWriteCustomOutput(t *testing.T) {
+// ExampleOutputWriter_WriteCustomOutput shows how to use the OutputWriter.WriteCustomOutput function
+func ExampleOutputWriter_WriteCustomOutput() {
 	ow := NewOutputWriter()
 	// Write 3 lines and assert correct result
 	ow.StartLine()

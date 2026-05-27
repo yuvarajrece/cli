@@ -43,13 +43,19 @@ var firewallRuleCreateCmd = &cobra.Command{
 
 		// Validate CIDR input
 		if err := validateCIDRs(cidr); err != nil {
-			utility.Error(err.Error())
+			utility.Error("%s", err.Error())
+			os.Exit(1)
+		}
+
+		isICMP := strings.EqualFold(protocol, "icmp")
+		if !isICMP && startPort == "" {
+			utility.Error("'--startport' flag is required for protocol %s", strings.ToUpper(protocol))
 			os.Exit(1)
 		}
 
 		newRuleConfig := &civogo.FirewallRuleConfig{
 			FirewallID: firewall.ID,
-			Protocol:   protocol,
+			Protocol:   strings.ToLower(protocol),
 			StartPort:  startPort,
 			Cidr:       strings.Split(cidr, ","),
 			Label:      label,
@@ -59,21 +65,24 @@ var firewallRuleCreateCmd = &cobra.Command{
 
 		// Check the rule address, if the input is different
 		// from (ingress or egress) then we will generate an error
-		if direction == "ingress" {
+		switch direction {
+		case "ingress":
 			newRuleConfig.Direction = direction
 			directionValue = "from"
-		} else if direction == "egress" {
+		case "egress":
 			newRuleConfig.Direction = direction
 			directionValue = "to"
-		} else {
+		default:
 			utility.Error("'--direction' flag can't be empty")
 			os.Exit(1)
 		}
 
-		if endPort == "" {
-			newRuleConfig.EndPort = startPort
-		} else {
-			newRuleConfig.EndPort = endPort
+		if !isICMP {
+			if endPort == "" {
+				newRuleConfig.EndPort = startPort
+			} else {
+				newRuleConfig.EndPort = endPort
+			}
 		}
 
 		rule, err := client.NewFirewallRule(newRuleConfig)
@@ -91,13 +100,17 @@ var firewallRuleCreateCmd = &cobra.Command{
 			ow.WriteCustomOutput(common.OutputFields)
 		default:
 			if rule.Label == "" {
-				if newRuleConfig.EndPort == newRuleConfig.StartPort {
+				if isICMP {
+					fmt.Printf("Created a firewall rule to %s, %s access for %s %s %s with ID %s\n", utility.Green(newRuleConfig.Action), utility.Green(newRuleConfig.Direction), utility.Green(strings.ToUpper(newRuleConfig.Protocol)), directionValue, utility.Green(strings.Join(newRuleConfig.Cidr, ", ")), rule.ID)
+				} else if newRuleConfig.EndPort == newRuleConfig.StartPort {
 					fmt.Printf("Created a firewall rule to %s, %s access to port %s %s %s with ID %s\n", utility.Green(newRuleConfig.Action), utility.Green(newRuleConfig.Direction), utility.Green(newRuleConfig.StartPort), directionValue, utility.Green(strings.Join(newRuleConfig.Cidr, ", ")), rule.ID)
 				} else {
 					fmt.Printf("Created a firewall rule to %s, %s access to ports %s-%s %s %s with ID %s\n", utility.Green(newRuleConfig.Action), utility.Green(newRuleConfig.Direction), utility.Green(newRuleConfig.StartPort), utility.Green(newRuleConfig.EndPort), directionValue, utility.Green(strings.Join(newRuleConfig.Cidr, ", ")), rule.ID)
 				}
 			} else {
-				if newRuleConfig.EndPort == newRuleConfig.StartPort {
+				if isICMP {
+					fmt.Printf("Created a firewall rule called %s to %s, %s access for %s %s %s with ID %s\n", utility.Green(rule.Label), utility.Green(newRuleConfig.Action), utility.Green(newRuleConfig.Direction), utility.Green(strings.ToUpper(newRuleConfig.Protocol)), directionValue, utility.Green(strings.Join(newRuleConfig.Cidr, ", ")), rule.ID)
+				} else if newRuleConfig.EndPort == newRuleConfig.StartPort {
 					fmt.Printf("Created a firewall rule called %s to %s, %s access to port %s %s %s with ID %s\n", utility.Green(rule.Label), utility.Green(newRuleConfig.Action), utility.Green(newRuleConfig.Direction), utility.Green(newRuleConfig.StartPort), directionValue, utility.Green(strings.Join(newRuleConfig.Cidr, ", ")), rule.ID)
 				} else {
 					fmt.Printf("Created a firewall rule called %s to %s, %s access to ports %s-%s %s %s with ID %s\n", utility.Green(rule.Label), utility.Green(newRuleConfig.Action), utility.Green(newRuleConfig.Direction), utility.Green(newRuleConfig.StartPort), utility.Green(newRuleConfig.EndPort), directionValue, utility.Green(strings.Join(newRuleConfig.Cidr, ", ")), rule.ID)

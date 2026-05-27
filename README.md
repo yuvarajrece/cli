@@ -27,8 +27,9 @@ Civo CLI is a tool to manage your [Civo.com](https://www.civo.com) account from 
 - [Quota](#quota)
 - [Sizes](#sizes)
 - [SSH Keys](#ssh-keys)
-- [DiskImages](#disk-image)
+- [Disk Images](#disk-images)
 - [Volumes](#volumes)
+- [Resource Snapshots](#resource-snapshots)
 - [Teams](#teams)
 - [Permissions](#permissions)
 - [Region](#region)
@@ -271,41 +272,81 @@ Options:
   -k, --sshkey string        the instance's ssh key you can use the Name or the ID
   -g, --tags string          the instance's tags
   -w, --wait                 wait until the instance's is ready
-
+  --allowed-ips <ip1,ip2,...> Specifies a comma-separated list of IP addresses that the instance is allowed to use (for IP/MAC spoofing protection, the allowed_ips need to be within the network subnet that the instance is attached to).
+  --network-bandwidth-limit <limit_mbps> Sets the network bandwidth limit for the instance in Mbps. Use 0 for unlimited.
 ```
 
 Example usage:
 
 ```sh
-$ civo instance create --hostname=api-demo.test --size g3.small  --diskimage=ubuntu-focal --initialuser=demo-user
+$ civo instance create --hostname=api-demo.test --size g4s.small --diskimage=ubuntu-noble --initialuser=demo-user --allowed-ips 192.168.1.100,192.168.1.101 --network-bandwidth-limit 100
   The instance api-demo.test has been created
 
 $ civo instance show api-demo.test
               ID : 112f2407-fb89-443e-bd0e-5ddabc4682c6
         Hostname : api-demo.test
           Status : ACTIVE
-            Size : g3.small
+            Size : g4s.small
        Cpu Cores : 1
              Ram : 2048
         SSD disk : 25
           Region : LON1
       Network ID : 28244c7d-b1b9-48cf-9727-aebb3493aaac
-
-   ID : ubuntu-bionic
+   Disk image ID : ubuntu-noble
      Snapshot ID :
     Initial User : demo-user
 Initial Password : demo-user
          SSH Key :
      Firewall ID : c9e14ae8-b8eb-4bae-a687-9da4637233da
             Tags :
-      Created At : Mon, 01 Jan 0001 00:00:00 UTC
+      Created At : Mon, 01 Jan 0001 00:00:00 UTC # Note: This is a placeholder date
       Private IP : 192.168.1.7
        Public IP : 74.220.21.246
+     Allowed IPs : 192.168.1.100, 192.168.1.101
+Network Bandwidth Limit : 100 Mbps
 
 ----------------------------- NOTES -----------------------------
 ```
 
 You will be able to see the instance's details by running `civo instance show api-demo.test` as above.
+
+#### Show Instance Details
+
+The `civo instance show` command displays detailed information about a specific instance.
+
+**Usage:**
+`civo instance show <INSTANCE_ID_OR_HOSTNAME>`
+
+If you wish to use a custom format, the available fields are:
+
+	* id
+	* hostname
+	* status
+	* size
+	* cpu_cores
+	* ram_mb
+	* disk_gb
+	* region
+	* network_id
+	* diskimage_id
+	* initial_user
+	* initial_password
+	* ssh_key
+	* firewall_id
+	* tags
+	* created_at
+	* private_ip
+	* public_ip
+	* notes
+	* script
+	* reverse_dns
+	* allowed_ips
+	* network_bandwidth_limit
+
+The output for `civo instance show` now includes:
+
+*   **Allowed IPs**: A comma-separated list of IPs the instance is allowed to use, with traffic from the assigned private IP address being automatically allowed if it's not in this list.
+*   **Network Bandwidth Limit**: The configured network bandwidth limit (e.g., "500 Mbps" or "Unlimited").
 
 #### Disk images and instance sizes
 
@@ -313,29 +354,39 @@ You can view the Disk images by running `civo diskimage ls`
 
 ```sh
 $ civo diskimage ls
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| ID                                   | Name            | Version        | State     | Distribution |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| 9b661c46-ac4f-46e1-9f3d-aaacde9b4fec | debian-9        |              9 | available | debian       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| d927ad2f-5073-4ed6-b2eb-b8e61aef29a8 | ubuntu-focal    |          20.04 | available | ubuntu       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| a4204155-a876-43fa-b4d6-ea2af8774560 | debian-10       |             10 | available | debian       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| eda67ea0-4282-4945-9b7b-d3e1cba1d987 | ubuntu-jammy    |          22.04 | available | ubuntu       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| 170db96f-8458-44aa-83ca-0c31fb81a835 | rocky-9-1       |            9.1 | available | rocky        |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| 25fbbd96-d5ec-4d08-9c75-a5e154dabf9b | debian-11       |             11 | available | debian       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| 21613daa-a66b-44fc-87f5-b6db566d8f91 | ubuntu-cuda11-8 | 22.04-cuda11-8 | available | ubuntu       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| ffb6fd93-cb06-4e8d-8058-46003b78e2ff | talos-v1.2.8    | 1.25.5         | available | talos        |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| 9a16a77e-1a1f-45c8-87fd-6d1a19eeaac9 | talos-v1.5.0    | 1.27.0         | available | talos        |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
-| 13232803-0928-4634-9ab8-476bff29ef1b | ubuntu-cuda12-2 | 22.04-cuda12-2 | available | ubuntu       |
-+--------------------------------------+-----------------+----------------+-----------+--------------+
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| ID                                   | Name                 | Version        | State     | Distribution |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| a4204155-a876-43fa-b4d6-ea2af8774560 | debian-10            |             10 | available | debian       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 25fbbd96-d5ec-4d08-9c75-a5e154dabf9b | debian-11            |             11 | available | debian       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 887f05e7-e3b0-49b5-9ab9-6f35848e1e56 | debian-12            |             12 | available | debian       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 9b661c46-ac4f-46e1-9f3d-aaacde9b4fec | debian-9             |              9 | available | debian       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| d0e47b5e-b9af-4386-9902-2ded1018dd29 | rocky-10             |             10 | available | rocky        |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| d052a966-385d-4018-931e-3637fe97cd13 | rocky-9              |              9 | available | rocky        |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 170db96f-8458-44aa-83ca-0c31fb81a835 | rocky-9-1            |            9.1 | available | rocky        |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 21613daa-a66b-44fc-87f5-b6db566d8f91 | ubuntu-cuda11-8      | 22.04-cuda11-8 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 13232803-0928-4634-9ab8-476bff29ef1b | ubuntu-cuda12-2      | 22.04-cuda12-2 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| ece39039-56ac-4bf6-8b39-78bd895d8385 | ubuntu-cuda12-6      | 24.04-cuda12-6 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 8d7e4997-f97d-43c8-9936-8329bbbcc6cf | ubuntu-cuda12-8      | 24.04-cuda12-8 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| 0b346fc3-2d7e-4be7-8881-34787417f7ff | ubuntu-cuda12-9      | 24.04-cuda12-9 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| d927ad2f-5073-4ed6-b2eb-b8e61aef29a8 | ubuntu-focal         |          20.04 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| eda67ea0-4282-4945-9b7b-d3e1cba1d987 | ubuntu-jammy         |          22.04 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
+| d2c2c728-512d-4087-906a-8486fcf4a1c7 | ubuntu-noble         |          24.04 | available | ubuntu       |
++--------------------------------------+----------------------+----------------+-----------+--------------+
 ```
 
 You can view the instance sizes list by running `civo size ls`
@@ -469,7 +520,74 @@ $ civo size ls
 +--------------------+--------------------------------+------------+-----+---------+-----+
 | an.g1.l40s.kube.x8 | Extra Large - Nvidia L40S 40GB | Kubernetes |  96 | 1048576 | 400 |
 +--------------------+--------------------------------+------------+-----+---------+-----+
+```
 
+#### Instance Snapshots
+
+Snapshots allow you to create point-in-time copies of your instances. You can use these snapshots to create new instances or restore an existing instance to a previous state.
+
+##### Creating a Snapshot
+
+To create a snapshot of an instance:
+
+```sh
+$ civo instance snapshot create INSTANCE_NAME [flags]
+
+Flags:
+  -n, --name string   The name of the snapshot (default: auto-generated)
+  -d, --description string   Description for the snapshot
+```
+
+##### Listing Snapshots
+
+To view all available snapshots for a specific instance:
+
+```sh
+$ civo instance snapshot list INSTANCE_NAME/ID
+```
+
+##### Restoring from a Snapshot
+
+To restore an instance from a snapshot:
+
+```sh
+$ civo instance snapshot restore INSTANCE_NAME/ID SNAPSHOT_NAME/ID [flags]
+
+Flags:
+  -d, --description string   New description for the restored instance
+      --hostname string      New hostname for the restored instance (optional)
+      --private-ipv4 string  New private IPv4 address for the restored instance (optional)
+      --overwrite-existing   Overwrite an existing instance if it shares the same IP or hostname (defaults to false)
+```
+
+Example:
+```sh
+$ civo instance snapshot restore my-instance-id snap-123 --hostname restored-instance-new-name --overwrite-existing
+```
+
+##### Updating a Snapshot
+
+To update the name or description of an instance snapshot:
+
+```sh
+$ civo instance snapshot update INSTANCE_NAME/ID SNAPSHOT_NAME/ID [flags]
+
+Flags:
+  -n, --name string         New name for the snapshot
+  -d, --description string  New description for the snapshot
+```
+
+Example:
+```sh
+$ civo instance snapshot update my-instance my-snapshot --name new-snapshot-name --description "Updated snapshot description"
+```
+
+##### Removing a Snapshot
+
+To delete a snapshot:
+
+```sh
+$ civo instance snapshot remove INSTANCE_NAME/ID SNAPSHOT_NAME/ID
 ```
 
 #### Viewing the Default User Password For an Instance
@@ -493,7 +611,7 @@ BrbXNW2RUYLe
 If an instance has a public IP address configured, you can display it using `civo instance public-ip ID/hostname`:
 
 ```sh
-$ civo instance show api-demo.test -o custom -f public_ip
+$ civo instance public-ip api-demo.test -o custom -f public_ip # Corrected from 'show' to 'public-ip'
 74.220.21.246
 ```
 
@@ -518,6 +636,54 @@ You can take the firewall ID and use it to associate a firewall with an instance
 ```sh
 $ civo instance firewall api-demo.test f79db64d-41f0-4be0-ae80-ce4499164319
 Set the firewall for the instance api-demo.test (112f2407-fb89-443e-bd0e-5ddabc4682c6) to Kubernetes cluster: Demo (f79db64d-41f0-4be0-ae80-ce4499164319)
+```
+
+#### Update Allowed IPs for an Instance
+
+A new command to manage the allowed IP addresses for an instance (IP/MAC spoofing protection). This replaces the existing list of allowed IPs.
+
+**Usage:**
+`civo instance allowed-ips-update <INSTANCE_ID_OR_NAME> --ips <ip1,ip2,...>`
+
+**Arguments & Flags:**
+
+*   `<INSTANCE_ID_OR_NAME>` (Required): The ID or hostname of the instance.
+*   `--ips <ip1,ip2,...>`: A comma-separated list of IP addresses to set. To clear all allowed IPs, provide an empty string (e.g., `--ips ""`).
+
+**Example:**
+
+To set allowed IPs:
+```sh
+civo instance allowed-ips-update my-instance-01 --ips 192.168.0.10,192.168.0.11
+```
+
+To clear all allowed IPs:
+```sh
+civo instance allowed-ips-update my-instance-01 --ips ""
+```
+
+#### Update Network Bandwidth Limit for an Instance
+
+A new command to update the network bandwidth limit for an existing instance.
+
+**Usage:**
+`civo instance bandwidth-update <INSTANCE_ID_OR_NAME> --limit <BANDWIDTH_MBPS>`
+
+**Arguments & Flags:**
+
+*   `<INSTANCE_ID_OR_NAME>` (Required): The ID or hostname of the instance.
+*   `--limit <BANDWIDTH_MBPS>` (Required): The desired network bandwidth limit in Mbps. Use `0` for unlimited.
+
+**Example:**
+
+To set a 500 Mbps limit:
+```sh
+civo instance bandwidth-update my-instance-01 --limit 500
+```
+
+To set to unlimited (assuming 0 means unlimited by the API):
+```sh
+civo instance bandwidth-update my-instance-01 --limit 0
 ```
 
 #### Listing Instances
@@ -688,16 +854,16 @@ The recovery-status command supports custom output formats with the following fi
 * status - Current recovery mode status
 
 
-### VNC Access
+### VNC/Console Access
 
-The VNC command allows you to access your instance through a browser-based VNC console.
+The console command allows you to access your instance through a browser-based VNC console.
 
 ```sh
 # Open VNC console (default duration)
-civo instance vnc INSTANCE_ID/HOSTNAME
+civo instance console INSTANCE_ID/HOSTNAME
 
 # Open VNC console with custom duration
-civo instance vnc INSTANCE_ID/HOSTNAME --duration 2h
+civo instance console INSTANCE_ID/HOSTNAME --duration 2h
 ```
 
 The `--duration` flag accepts Go's duration format:
@@ -711,6 +877,13 @@ When executed, the command will:
 3. Automatically open the console in your default browser
 4. Attempt to connect for up to 35 seconds before timing out
 
+```sh
+# Check the status of a VNC/console session
+civo instance console status INSTANCE_ID/HOSTNAME
+
+# Stop an active VNC/console session
+civo instance console stop INSTANCE_ID/HOSTNAME
+```
 
 ## Kubernetes clusters
 
@@ -1336,11 +1509,18 @@ $ civo firewall create civocli_demo
 Created a firewall called civocli_demo with ID ab2a25d7-edd4-4ecd-95c4-58cb6bc402de
 ```
 
-You can also create a firewall without any default rules by using the flag `-r` or `--create-rules` set to `false`. In both cases, the usage is like:
+By default, this newly created firewall will come with the default rules applied.
+
+To create a firewall without any default rules, use the `--no-default-rules` flag:
+
+```bash
+civo firewall create new_firewall_name --no-default-rules
+```
+
+You can also use the `-r` or `--create-rules` flag set to `false` to create a firewall without default rules, but it is deprecated and will be removed in future versions. In both cases, the usage is like:
 
 ```bash
 civo firewall create new_firewall_name --create-rules=false
-
 ```
 
 You will then be able to **configure rules** that allow connections to and from your instance by adding a new rule using `civo firewall rule create firewall_id` with the required and your choice of optional parameters, listed here and used in an example below:
@@ -1563,6 +1743,61 @@ Warning: Are you sure you want to delete the cli-demo-fa5d-7de9b2 Object Store C
 The Object Store Credential (cli-demo-fa5d-7de9b2) has been deleted
 ```
 
+## Disk Images
+
+Civo CLI provides comprehensive disk image management capabilities through the `diskimage` command. This feature allows you to list, create, show, and delete disk images in your Civo account.
+
+### List Disk Images
+```bash
+civo diskimage ls [--custom]
+```
+Lists all available disk images. Use the `--custom` flag to show only your custom images in the list.
+
+Available output fields:
+- id
+- name
+- version
+- state
+- distribution
+
+Example with custom format:
+```bash
+civo diskimage ls -o=custom -f=id,name
+```
+
+### Create Disk Image
+```bash
+civo diskimage create --name NAME --distribution DISTRO --version VERSION --path PATH [--os TYPE] [--logo_path LOGO]
+```
+
+Required flags:
+- `--name, -n`: Name of the disk image
+- `--distribution, -d`: Distribution name (e.g., ubuntu, centos)
+- `--version, -v`: Version of the distribution
+- `--path, -p`: Path to disk image file
+
+Optional flags:
+- `--os, -t`: Operating system type (linux/windows, defaults to linux)
+- `--logo_path, -l`: Path to SVG logo file
+
+Requirements:
+- Disk image must be in `.raw` or `.qcow2` format
+- Logo must be in SVG format
+
+### Show Disk Image Details
+```bash
+civo diskimage show ID/NAME
+```
+Finds and displays details of a disk image by its ID or name.
+
+### Delete Disk Image
+```bash
+civo diskimage delete ID/NAME
+```
+Deletes a disk image from your account.
+
+**Note:** All disk image operations respect the currently selected region.
+
 ## Quota
 
 All customers joining Civo will have a default quota applied to their account. The quota has nothing to do with charges or payments, but with the limits on the amount of simultaneous resources you can use. You can view the state of your quota at any time by running `civo quota show`. Here is my current quota usage at the time of writing:
@@ -1774,21 +2009,21 @@ $ civo sizes list --filter kubernetes
 | g4g.kube.xlarge    | Extra Large - Nvidia A100 80GB | Kubernetes |  96 | 1048576 | 100 |
 +--------------------+--------------------------------+------------+-----+---------+-----+
 | g4g.40.kube.small  | Small - Nvidia A100 40GB       | Kubernetes |   8 |   65536 | 200 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
 | g4g.40.kube.medium | Medium - Nvidia A100 40GB      | Kubernetes |  16 |  131072 | 400 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
 | g4g.40.kube.large  | Large - Nvidia A100 40GB       | Kubernetes |  32 |  262133 | 400 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
 | g4g.40.kube.xlarge | Extra Large - Nvidia A100 40GB | Kubernetes |  64 |  524288 | 400 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
-| an.g1.l40s.kube.x1 | Small - Nvidia L40S 40GB       | Kubernetes |  12 |  131072 | 200 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
-| an.g1.l40s.kube.x2 | Medium - Nvidia L40S 40GB      | Kubernetes |  24 |  262133 | 200 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
-| an.g1.l40s.kube.x4 | Large - Nvidia L40S 40GB       | Kubernetes |  48 |  524288 | 400 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
-| an.g1.l40s.kube.x8 | Extra Large - Nvidia L40S 40GB | Kubernetes |  96 | 1048576 | 400 |
-+--------------------+--------------------------------+------------+-----+---------+-----+
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
+| an.g1.l40s.kube.x1 | Small - Nvidia L40S 40GB       | Kubernetes |  12 |  131072 |  200 |
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
+| an.g1.l40s.kube.x2 | Medium - Nvidia L40S 40GB      | Kubernetes |  24 |  262133 |  200 |
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
+| an.g1.l40s.kube.x4 | Large - Nvidia L40S 40GB       | Kubernetes |  48 |  524288 |  400 |
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
+| an.g1.l40s.kube.x8 | Extra Large - Nvidia L40S 40GB | Kubernetes |  96 | 1048576 |  400 |
++--------------------+--------------------------------+------------+-----------+---------+--------+------------+
 ```
 
 ## SSH Keys
@@ -1929,6 +2164,101 @@ The volume called CLI-demo-volume with ID 59076ec8-edba-4071-80d0-e9cfcce37b12 w
 ```
 
 If a Kubernetes volume is showing with a status of `dangling` it can be deleted to release the quota and prevent further billing by running `civo volume delete <VOLUME-NAME> --region <REGION-NAME>`.
+
+
+## Resource Snapshots
+
+Resource snapshots allow you to manage snapshots of your resources. 
+
+> [!IMPORTANT]  
+> Currently, Resource Snapshots will only display Instance Snapshots. More resource types will be supported in the future.
+
+You can list, show details, update, delete, and restore snapshots using the following commands:
+
+```sh
+# List all resource snapshots
+civo resource-snapshot list
+
+# Show details of a specific snapshot
+civo resource-snapshot show SNAPSHOT_ID/NAME
+
+# Update a snapshot
+civo resource-snapshot update SNAPSHOT_ID/NAME
+
+# Delete a snapshot
+civo resource-snapshot delete SNAPSHOT_ID/NAME
+
+# Restore a snapshot
+civo resource-snapshot restore SNAPSHOT_ID/NAME
+```
+
+The available fields for custom output format when listing snapshots are:
+- id
+- name
+- description
+- resource_type
+- created_at
+
+### Snapshot Schedules
+
+Snapshot schedules allow you to automate the creation and management of snapshots of your resources. 
+
+> [!IMPORTANT]  
+> Currently, Snapshot Schedules only work with Instance Snapshots. More resource types will be supported in the future.
+
+#### Creating a Schedule
+
+To create a snapshot schedule:
+
+```sh
+$ civo snapshot schedule create --name SCHEDULE_NAME --cron CRON_EXPRESSION --instance-id="INSTANCE_ID1,INSTANCE_ID2,..." --max-snapshots MAX_SNAPSHOTS [flags]
+
+Flags:
+  -d, --description string    Description for the snapshot schedule
+  -v, --include-volumes       Include attached volumes in snapshots
+```
+
+##### Listing Schedules
+
+To view all available schedules: 
+
+```sh
+$ civo snapshot schedule list
+```
+
+##### Viewing Schedule Details
+
+To view the details of a specific schedule:
+
+```sh
+$ civo snapshot schedule show SCHEDULE_NAME/ID
+```
+
+##### Updating a Schedule
+
+To update the details of a snapshot schedule:
+
+```sh
+$ civo snapshot schedule update SCHEDULE_NAME/ID [flags]
+
+Flags:
+  -d, --description string   New description for the snapshot schedule
+  -n, --name string          New name for the snapshot schedule
+  -p, --paused string        Whether to pause the snapshot schedule (use 'true' or 'false')
+```
+
+Example:
+```sh
+$ civo snapshot schedule update my-snapshot --name new-schedule-name --description "Updated schedule description" --paused true
+```
+
+##### Removing a Schedule
+
+To delete a snapshot schedule:
+
+```sh
+$ civo snapshot schedule remove SCHEDULE_NAME/ID
+```
 
 ## Teams
 

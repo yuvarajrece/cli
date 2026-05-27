@@ -22,6 +22,8 @@ var hostnameCreate, size, diskimage, publicip, initialuser, sshkey, tags, networ
 var script string
 var skipShebangCheck bool
 var volumes []string
+var allowedIPs []string
+var networkBandwidthLimit int
 
 var instanceCreateCmd = &cobra.Command{
 	Use:     "create",
@@ -145,6 +147,14 @@ If you wish to use a custom format, the available fields are:
 			config.PublicIPRequired = publicip
 		}
 
+		if len(allowedIPs) > 0 {
+			config.AllowedIPs = allowedIPs
+		}
+
+		if networkBandwidthLimit > 0 {
+			config.NetworkBandwidthLimit = networkBandwidthLimit
+		}
+
 		// Set reserved ip if provided
 		if reservedIPv4 != "" {
 			config.ReservedIPv4 = reservedIPv4
@@ -226,10 +236,10 @@ If you wish to use a custom format, the available fields are:
 
 			defer file.Close()
 
-			var buf []byte = make([]byte, 1)
+			buf := make([]byte, 1)
 
 			if !skipShebangCheck {
-				var shebangBuf []byte = make([]byte, 2)
+				shebangBuf := make([]byte, 2)
 
 				if _, err := file.Read(shebangBuf); err != nil {
 					utility.Error("read failed during shebang check on script '%s': %s", script, err)
@@ -320,7 +330,7 @@ If you wish to use a custom format, the available fields are:
 			}
 		}
 
-		if common.OutputFormat == "human" {
+		if common.OutputFormat == common.OutputFormatHuman {
 			if executionTime != "" {
 				fmt.Printf("The instance %s %s has been created in %s\n", utility.Green(instance.Hostname), publicIP, executionTime)
 			} else {

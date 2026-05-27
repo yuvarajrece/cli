@@ -11,18 +11,20 @@ import (
 	"github.com/civo/cli/cmd/firewall"
 	"github.com/civo/cli/cmd/instance"
 	"github.com/civo/cli/cmd/ip"
-	"github.com/civo/cli/cmd/kfcluster"
 	"github.com/civo/cli/cmd/kubernetes"
 	"github.com/civo/cli/cmd/loadbalancer"
 	"github.com/civo/cli/cmd/network"
 	"github.com/civo/cli/cmd/objectstore"
 	"github.com/civo/cli/cmd/permission"
 	"github.com/civo/cli/cmd/region"
+	"github.com/civo/cli/cmd/resourcesnapshot"
 	"github.com/civo/cli/cmd/size"
+	"github.com/civo/cli/cmd/snapshot"
 	"github.com/civo/cli/cmd/sshkey"
 	"github.com/civo/cli/cmd/teams"
 	"github.com/civo/cli/cmd/volume"
 	"github.com/civo/cli/cmd/volumetype"
+	"github.com/civo/cli/cmd/vpc"
 	"github.com/civo/cli/common"
 	"github.com/civo/cli/config"
 	"github.com/civo/cli/utility"
@@ -149,17 +151,18 @@ func init() {
 	rootCmd.AddCommand(firewall.FirewallCmd)
 	rootCmd.AddCommand(instance.InstanceCmd)
 	rootCmd.AddCommand(ip.IPCmd)
-	rootCmd.AddCommand(kfcluster.KFClusterCmd)
 	rootCmd.AddCommand(kubernetes.KubernetesCmd)
 	rootCmd.AddCommand(loadbalancer.LoadBalancerCmd)
 	rootCmd.AddCommand(network.NetworkCmd)
 	rootCmd.AddCommand(objectstore.ObjectStoreCmd)
 	rootCmd.AddCommand(permission.PermissionsCmd)
 	rootCmd.AddCommand(region.RegionCmd)
+	rootCmd.AddCommand(resourcesnapshot.ResourceSnapshotCmd)
 	rootCmd.AddCommand(size.SizeCmd)
 	rootCmd.AddCommand(sshkey.SSHKeyCmd)
 	rootCmd.AddCommand(teams.TeamsCmd)
 	rootCmd.AddCommand(volume.VolumeCmd)
 	rootCmd.AddCommand(volumetype.VolumeTypeCmd)
-
+	rootCmd.AddCommand(snapshot.SnapshotCmd)
+	rootCmd.AddCommand(vpc.VPCCmd)
 }

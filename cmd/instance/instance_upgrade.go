@@ -14,7 +14,7 @@ import (
 
 var instanceUpgradeCmd = &cobra.Command{
 	Use:     "upgrade",
-	Example: "civo instance upgrade ID/HOSTNAME g3.xlarge",
+	Example: "civo instance upgrade ID/HOSTNAME g4s.xlarge",
 	Args:    cobra.MinimumNArgs(2),
 	Aliases: []string{"resize"},
 	Short:   "Upgrade an instance",
@@ -72,7 +72,7 @@ If you wish to use a custom format, the available fields are:
 			os.Exit(1)
 		}
 
-		if common.OutputFormat == "human" {
+		if common.OutputFormat == common.OutputFormatHuman {
 			fmt.Printf("The instance %s (%s) is being upgraded to %s\n", utility.Green(instance.Hostname), instance.ID, utility.Green(args[1]))
 		} else {
 			ow := utility.NewOutputWriter()

@@ -7,6 +7,7 @@ import (
 )
 
 var name, schedule, backupType string
+var scheduled bool
 
 // dbBackupCmd is the root command for the db backup subcommand
 var dbBackupCmd = &cobra.Command{
@@ -34,10 +35,12 @@ func init() {
 	dbBackupCreateCmd.Flags().StringVarP(&name, "name", "n", "", "name of the database backup")
 	dbBackupCreateCmd.Flags().StringVarP(&schedule, "schedule", "s", "", "schedule of the database backup in the form of cronjob")
 	dbBackupCreateCmd.Flags().StringVarP(&backupType, "type", "t", "scheduled", "set the type of database backup manual/scheduled")
-
-	dbBackupCreateCmd.MarkFlagRequired("name")
+	_ = dbBackupCreateCmd.MarkFlagRequired("name")
 
 	// Update cmd options
 	dbBackupUpdateCmd.Flags().StringVarP(&name, "name", "n", "", "name of the database backup")
 	dbBackupUpdateCmd.Flags().StringVarP(&schedule, "schedule", "s", "", "schedule of the database backup in the form of cronjob")
+
+	// Delete cmd options
+	dbBackupDeleteCmd.Flags().BoolVar(&scheduled, "scheduled", false, "delete scheduled backups instead of manual backups")
 }

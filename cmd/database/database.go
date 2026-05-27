@@ -3,12 +3,36 @@ package database
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/civo/civogo"
+	"github.com/civo/cli/utility"
 	"github.com/spf13/cobra"
 )
 
 var firewallID, networkID, size, updatedName, software, softwareVersion string
 var nodes int
+
+// showDatabaseDeprecationWarning displays a warning message if the database version is deprecated
+func showDatabaseDeprecationWarnings(databases ...civogo.Database) {
+	// We want to show one warning per version at max.
+	pgWarning := false
+	mysqlWarning := false
+
+	for _, db := range databases {
+		software := strings.ToLower(db.Software)
+
+		if software == "mysql" && !mysqlWarning {
+			utility.Warning("MySQL databases are deprecated and will be removed in a future release. Please consider checking the documentation https://www.civo.com/docs/database/mysql/dump-mysql to understand how to keep using MySQL with Civo")
+			mysqlWarning = true
+		}
+
+		if software == "postgresql" && strings.HasPrefix(db.SoftwareVersion, "14") && !pgWarning {
+			utility.Warning("PostgreSQL 14 is deprecated and will be removed in a future release. Please migrate to PostgreSQL 17. For migration guidance, see: https://www.civo.com/docs/database/postgresql/migrate-from-14-to-17")
+			pgWarning = true
+		}
+	}
+}
 
 // DBCmd is the root command for the db subcommand
 var DBCmd = &cobra.Command{
@@ -45,7 +69,7 @@ func init() {
 	dbCreateCmd.Flags().StringVarP(&networkID, "network", "n", "", "the network to use for the database")
 	dbCreateCmd.Flags().StringVarP(&rulesFirewall, "firewall-rules", "u", "", "the firewall rules to use for the database")
 	dbCreateCmd.Flags().StringVarP(&size, "size", "s", "g3.db.small", "the size of the database. You can list available DB sizes by `civo size list -s database`")
-	dbCreateCmd.Flags().StringVarP(&software, "software", "m", "MySQL", "the software to use for the database. One of: MySQL, PostgreSQL. Please make sure you use the correct capitalisation.")
+	dbCreateCmd.Flags().StringVarP(&software, "software", "m", "PostgreSQL", "the software to use for the database.")
 	dbCreateCmd.Flags().StringVarP(&softwareVersion, "version", "v", "", "the version of the software to use for the database.")
 	dbCreateCmd.Flags().BoolVarP(&waitDatabase, "wait", "w", false, "a simple flag (e.g. --wait) that will cause the CLI to spin and wait for the database to be ACTIVE")
 
@@ -55,6 +79,6 @@ func init() {
 
 	dbRestoreCmd.Flags().StringVarP(&backup, "backup", "b", "", "the backup name which you can restore database")
 	dbRestoreCmd.Flags().StringVarP(&restoreName, "name", "n", "", "name of the restore")
-	dbRestoreCmd.MarkFlagRequired("backup")
-	dbRestoreCmd.MarkFlagRequired("name")
+	_ = dbRestoreCmd.MarkFlagRequired("backup")
+	_ = dbRestoreCmd.MarkFlagRequired("name")
 }

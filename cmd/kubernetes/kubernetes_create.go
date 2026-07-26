@@ -18,6 +18,7 @@ var numTargetNodes int
 var rulesFirewall string
 var waitKubernetes, saveConfigKubernetes, mergeConfigKubernetes, switchConfigKubernetes, createFirewall bool
 var kubernetesVersion, targetNodesSize, clusterName, clusterType, applications, removeapplications, networkID, existingFirewall, cniPlugin, volumeType string
+var logsCollectorEnabled bool
 var kubernetesCluster *civogo.KubernetesCluster
 
 var kubernetesCreateCmdExample = `civo kubernetes create CLUSTER_NAME [flags]
@@ -138,6 +139,16 @@ var kubernetesCreateCmd = &cobra.Command{
 			TargetNodesSize: targetNodesSize,
 			NetworkID:       network.ID,
 			CNIPlugin:       cni,
+		}
+
+		logsCollectorEnabledValue, logsCollectorMessage := utility.ResolveLogsCollectorEnabled(
+			targetNodesSize,
+			cmd.Flags().Changed("logs-collector-enabled"),
+			logsCollectorEnabled,
+		)
+		configKubernetes.LogsCollectorEnabled = logsCollectorEnabledValue
+		if logsCollectorMessage != "" {
+			utility.Info(logsCollectorMessage)
 		}
 
 		if rulesFirewall != "default" && !createFirewall {

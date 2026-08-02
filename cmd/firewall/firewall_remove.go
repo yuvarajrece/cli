@@ -16,13 +16,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var firewallList []utility.Resource
-var firewallRemoveCmd = &cobra.Command{
-	Use:     "remove [NAME]",
-	Aliases: []string{"rm", "delete", "destroy"},
-	Example: "civo firewall remove NAME",
-	Short:   "Remove a firewall",
-	Args:    cobra.MinimumNArgs(1),
+var firewallRuleList []utility.Resource
+var firewallRuleRemoveCmd = &cobra.Command{
+	Use:     "remove",
+	Aliases: []string{"delete", "destroy", "rm"},
+	Args:    cobra.MinimumNArgs(2),
+	Short:   "Remove firewall rule",
+	Example: "civo firewall rule remove FIREWALL_NAME/FIREWALL_ID FIREWALL_RULE_ID",
 	Run: func(cmd *cobra.Command, args []string) {
 		utility.EnsureCurrentRegion()
 
@@ -35,54 +35,66 @@ var firewallRemoveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if len(args) == 1 {
-			firewall, err := client.FindFirewall(args[0])
+		firewall, err := client.FindFirewall(args[0])
+		if err != nil {
+			if errors.Is(err, civogo.ZeroMatchesError) {
+				utility.Error("sorry there is no %s firewall in your account", utility.Red(args[0]))
+				os.Exit(1)
+			}
+			if errors.Is(err, civogo.MultipleMatchesError) {
+				utility.Error("sorry we found more than one firewall with that name in your account")
+				os.Exit(1)
+			}
+		}
+
+		if len(args) == 2 {
+			rule, err := client.FindFirewallRule(firewall.ID, args[1])
 			if err != nil {
 				if errors.Is(err, civogo.ZeroMatchesError) {
-					utility.Error("sorry there is no %s firewall in your account", utility.Red(args[0]))
+					utility.Error("sorry there is no %s firewall rule in your account", utility.Red(args[1]))
 					os.Exit(1)
 				}
 				if errors.Is(err, civogo.MultipleMatchesError) {
-					utility.Error("sorry we found more than one firewall with that name in your account")
+					utility.Error("sorry we found more than one firewall rule in your account")
 					os.Exit(1)
 				}
 			}
-			firewallList = append(firewallList, utility.Resource{ID: firewall.ID, Name: firewall.Name})
+			firewallRuleList = append(firewallRuleList, utility.Resource{ID: rule.ID, Name: rule.Label})
 		} else {
-			for _, v := range args {
-				firewall, err := client.FindFirewall(v)
+			for _, v := range args[1:] {
+				rule, err := client.FindFirewallRule(firewall.ID, v)
 				if err == nil {
-					firewallList = append(firewallList, utility.Resource{ID: firewall.ID, Name: firewall.Name})
+					firewallRuleList = append(firewallRuleList, utility.Resource{ID: rule.ID, Name: rule.Label})
 				}
 			}
 		}
 
-		firewallNameList := []string{}
-		for _, v := range firewallList {
-			firewallNameList = append(firewallNameList, v.Name)
+		firewallRuleNameList := []string{}
+		for _, v := range firewallRuleList {
+			firewallRuleNameList = append(firewallRuleNameList, v.Name)
 		}
 
-		if utility.UserConfirmedDeletion(pluralize.Pluralize(len(firewallList), "firewall"), common.DefaultYes, strings.Join(firewallNameList, ", ")) {
+		if utility.UserConfirmedDeletion(fmt.Sprintf("firewall %s", pluralize.Pluralize(len(firewallRuleList), "rule")), common.DefaultYes, strings.Join(firewallRuleNameList, ", ")) {
 
-			for _, v := range firewallList {
-				_, err = client.DeleteFirewall(v.ID)
+			for _, v := range firewallRuleList {
+				_, err = client.DeleteFirewallRule(firewall.ID, v.ID)
 				if err != nil {
-					utility.Error("error deleting the firewall: %s", err)
+					utility.Error("error deleting the firewall rule: %s", err)
 					os.Exit(1)
 				}
 			}
 
 			ow := utility.NewOutputWriter()
 
-			for _, v := range firewallList {
+			for _, v := range firewallRuleList {
 				ow.StartLine()
 				ow.AppendDataWithLabel("id", v.ID, "ID")
-				ow.AppendDataWithLabel("name", v.Name, "Name")
+				ow.AppendDataWithLabel("label", v.Name, "Label")
 			}
 
 			switch common.OutputFormat {
 			case "json":
-				if len(firewallList) == 1 {
+				if len(firewallRuleList) == 1 {
 					ow.WriteSingleObjectJSON(common.PrettySet)
 				} else {
 					ow.WriteMultipleObjectsJSON(common.PrettySet)
@@ -90,14 +102,15 @@ var firewallRemoveCmd = &cobra.Command{
 			case "custom":
 				ow.WriteCustomOutput(common.OutputFields)
 			default:
-				fmt.Printf("The %s (%s) %s been deleted\n",
-					pluralize.Pluralize(len(firewallList), "firewall"),
-					utility.Green(strings.Join(firewallNameList, ", ")),
-					pluralize.Has(len(firewallList)),
+				fmt.Printf("The firewall %s (%s) %s been deleted\n",
+					pluralize.Pluralize(len(firewallRuleList), "rule"),
+					strings.Join(firewallRuleNameList, ", "),
+					pluralize.Has(len(firewallRuleList)),
 				)
 			}
 		} else {
-			fmt.Println("Operation aborted.")
+			utility.Error("Operation aborted.")
 		}
+
 	},
 }

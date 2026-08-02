@@ -18,7 +18,6 @@ var numTargetNodes int
 var rulesFirewall string
 var waitKubernetes, saveConfigKubernetes, mergeConfigKubernetes, switchConfigKubernetes, createFirewall bool
 var kubernetesVersion, targetNodesSize, clusterName, clusterType, applications, removeapplications, networkID, existingFirewall, cniPlugin, volumeType string
-var logsCollectorEnabled bool
 var kubernetesCluster *civogo.KubernetesCluster
 
 var kubernetesCreateCmdExample = `civo kubernetes create CLUSTER_NAME [flags]
@@ -141,16 +140,6 @@ var kubernetesCreateCmd = &cobra.Command{
 			CNIPlugin:       cni,
 		}
 
-		logsCollectorEnabledValue, logsCollectorMessage := utility.ResolveLogsCollectorEnabled(
-			targetNodesSize,
-			cmd.Flags().Changed("logs-collector-enabled"),
-			logsCollectorEnabled,
-		)
-		configKubernetes.LogsCollectorEnabled = logsCollectorEnabledValue
-		if logsCollectorMessage != "" {
-			utility.Info(logsCollectorMessage)
-		}
-
 		if rulesFirewall != "default" && !createFirewall {
 			utility.Error("You can't use --firewall-rules without --create-firewall flag")
 			os.Exit(1)
@@ -223,7 +212,7 @@ var kubernetesCreateCmd = &cobra.Command{
 					os.Exit(1)
 				}
 			} else {
-				fmt.Println("Operation aborted.")
+				utility.Error("Operation aborted.")
 				os.Exit(1)
 			}
 		} else {
@@ -244,8 +233,7 @@ var kubernetesCreateCmd = &cobra.Command{
 			startTime := utility.StartTime()
 
 			stillCreating := true
-			s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-			s.Writer = os.Stderr
+			s := utility.NewSpinner(spinner.CharSets[9], 100*time.Millisecond)
 			s.Prefix = fmt.Sprintf("Creating a %d node %s cluster of %s instances called %s... ", kubernetesCluster.NumTargetNode, clusterType, kubernetesCluster.TargetNodeSize, kubernetesCluster.Name)
 			s.Start()
 
@@ -289,10 +277,12 @@ var kubernetesCreateCmd = &cobra.Command{
 		case "custom":
 			ow.WriteCustomOutput(common.OutputFields)
 		default:
-			if executionTime != "" {
-				fmt.Printf("The cluster %s (%s) has been created in %s\n", utility.Green(kubernetesCluster.Name), kubernetesCluster.ID, executionTime)
-			} else {
-				fmt.Printf("The cluster %s (%s) has been created\n", utility.Green(kubernetesCluster.Name), kubernetesCluster.ID)
+			if !common.Quiet {
+				if executionTime != "" {
+					fmt.Printf("The cluster %s (%s) has been created in %s\n", utility.Green(kubernetesCluster.Name), kubernetesCluster.ID, executionTime)
+				} else {
+					fmt.Printf("The cluster %s (%s) has been created\n", utility.Green(kubernetesCluster.Name), kubernetesCluster.ID)
+				}
 			}
 
 		}

@@ -1,8 +1,9 @@
-package firewall
+package vpc
 
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/civo/civogo"
@@ -10,18 +11,15 @@ import (
 	"github.com/civo/cli/config"
 	"github.com/civo/cli/pkg/pluralize"
 	"github.com/civo/cli/utility"
-
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
-var firewallList []utility.Resource
-var firewallRemoveCmd = &cobra.Command{
+var vpcFirewallResourceList []utility.Resource
+var vpcFirewallRemoveCmd = &cobra.Command{
 	Use:     "remove [NAME]",
 	Aliases: []string{"rm", "delete", "destroy"},
-	Example: "civo firewall remove NAME",
-	Short:   "Remove a firewall",
+	Example: "civo vpc firewall remove NAME",
+	Short:   "Remove a VPC firewall",
 	Args:    cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		utility.EnsureCurrentRegion()
@@ -36,45 +34,43 @@ var firewallRemoveCmd = &cobra.Command{
 		}
 
 		if len(args) == 1 {
-			firewall, err := client.FindFirewall(args[0])
+			firewall, err := client.FindVPCFirewall(args[0])
 			if err != nil {
 				if errors.Is(err, civogo.ZeroMatchesError) {
-					utility.Error("sorry there is no %s firewall in your account", utility.Red(args[0]))
+					utility.Error("sorry there is no %s VPC firewall in your account", utility.Red(args[0]))
 					os.Exit(1)
 				}
 				if errors.Is(err, civogo.MultipleMatchesError) {
-					utility.Error("sorry we found more than one firewall with that name in your account")
+					utility.Error("sorry we found more than one VPC firewall with that name in your account")
 					os.Exit(1)
 				}
 			}
-			firewallList = append(firewallList, utility.Resource{ID: firewall.ID, Name: firewall.Name})
+			vpcFirewallResourceList = append(vpcFirewallResourceList, utility.Resource{ID: firewall.ID, Name: firewall.Name})
 		} else {
 			for _, v := range args {
-				firewall, err := client.FindFirewall(v)
+				firewall, err := client.FindVPCFirewall(v)
 				if err == nil {
-					firewallList = append(firewallList, utility.Resource{ID: firewall.ID, Name: firewall.Name})
+					vpcFirewallResourceList = append(vpcFirewallResourceList, utility.Resource{ID: firewall.ID, Name: firewall.Name})
 				}
 			}
 		}
 
 		firewallNameList := []string{}
-		for _, v := range firewallList {
+		for _, v := range vpcFirewallResourceList {
 			firewallNameList = append(firewallNameList, v.Name)
 		}
 
-		if utility.UserConfirmedDeletion(pluralize.Pluralize(len(firewallList), "firewall"), common.DefaultYes, strings.Join(firewallNameList, ", ")) {
-
-			for _, v := range firewallList {
-				_, err = client.DeleteFirewall(v.ID)
+		if utility.UserConfirmedDeletion(pluralize.Pluralize(len(vpcFirewallResourceList), "VPC firewall"), common.DefaultYes, strings.Join(firewallNameList, ", ")) {
+			for _, v := range vpcFirewallResourceList {
+				_, err = client.DeleteVPCFirewall(v.ID)
 				if err != nil {
-					utility.Error("error deleting the firewall: %s", err)
+					utility.Error("error deleting the VPC firewall: %s", err)
 					os.Exit(1)
 				}
 			}
 
 			ow := utility.NewOutputWriter()
-
-			for _, v := range firewallList {
+			for _, v := range vpcFirewallResourceList {
 				ow.StartLine()
 				ow.AppendDataWithLabel("id", v.ID, "ID")
 				ow.AppendDataWithLabel("name", v.Name, "Name")
@@ -82,7 +78,7 @@ var firewallRemoveCmd = &cobra.Command{
 
 			switch common.OutputFormat {
 			case "json":
-				if len(firewallList) == 1 {
+				if len(vpcFirewallResourceList) == 1 {
 					ow.WriteSingleObjectJSON(common.PrettySet)
 				} else {
 					ow.WriteMultipleObjectsJSON(common.PrettySet)
@@ -91,9 +87,9 @@ var firewallRemoveCmd = &cobra.Command{
 				ow.WriteCustomOutput(common.OutputFields)
 			default:
 				fmt.Printf("The %s (%s) %s been deleted\n",
-					pluralize.Pluralize(len(firewallList), "firewall"),
+					pluralize.Pluralize(len(vpcFirewallResourceList), "VPC firewall"),
 					utility.Green(strings.Join(firewallNameList, ", ")),
-					pluralize.Has(len(firewallList)),
+					pluralize.Has(len(vpcFirewallResourceList)),
 				)
 			}
 		} else {
